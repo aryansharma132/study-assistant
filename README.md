@@ -190,6 +190,23 @@ pip install -r requirements.txt
 - Keep API keys in environment variables instead of hardcoding them.
 - The app is designed for educational and study-use scenarios.
 
+## Running tests
+
+Activate your virtual environment, then install the project and test dependencies:
+
+```bash
+python -m pip install -e .
+python -m pip install pytest
+```
+
+Run the test suite:
+
+```bash
+python -m pytest -q
+```
+
+Tests should run without real AI API credentials. GitHub Actions runs the same test command on pushes and pull requests.
+
 ## Author
 
 Rohan Bhati
