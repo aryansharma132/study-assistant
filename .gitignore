@@ -27,11 +27,19 @@ wheels/
 # Environment
 .env
 .env.local
-.venv312
+!.env.example
 
 # Local Python environments
 .venv/
+.venv312/
 venv/
+.streamlit/
+
+# Python cache
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # IDE
 .vscode/
@@ -51,3 +59,4 @@ uploaded_docs/
 *.docx
 *.txt
 !requirements.txt
+!runtime.txt

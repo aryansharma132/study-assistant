@@ -1,89 +1,122 @@
-# 📚 Multi-Agent AI Study Assistant
+# Study Assistant
 
-A personalized learning platform powered by multiple AI agents for study planning, quiz generation, tutoring, and RAG-based document Q&A.
+A multi-agent AI study app that helps students plan learning, generate personalized quizzes, create roadmaps, and get tutoring support with uploaded documents.
 
-## 🚀 Live Demo
-
-The app is live here:
+## Live demo
 
 https://study-assistant-jyv1.onrender.com
 
-## 🌟 What this app does
+## Overview
 
-- Create a personalized learning plan based on the student's goals, time, and level
-- Generate study roadmaps and milestones
-- Recommend relevant learning resources
-- Generate quizzes and explanations
-- Act as an AI tutor for follow-up questions
-- Answer questions from uploaded documents using RAG
+Study Assistant is a Streamlit-based learning platform built around multiple specialized AI agents. It helps students:
 
-## 🏗️ Tech Stack
+- analyze their current knowledge level
+- define goals and study constraints
+- generate personalized learning roadmaps
+- find relevant learning resources
+- create quizzes and explanations
+- ask follow-up questions through an AI tutor
+- search and answer questions from uploaded study material using RAG
+
+## Features
+
+- Personalized student analysis
+- Learning roadmap generation
+- Smart resource recommendations
+- Adaptive quiz generation
+- AI tutoring experience
+- Document Q&A with uploaded PDFs and notes
+- Multi-provider AI support with Groq and OpenAI
+
+## Tech stack
 
 - Python 3.12
 - Streamlit
 - LangChain
 - ChromaDB
-- OpenAI
-- Groq
 - Phidata
+- Groq
+- OpenAI
 
-## 🔐 Required environment variables
+## Project structure
 
-Create a `.env` file in the project root with:
-
-```bash
-GROQ_API_KEY=your_groq_key_here
-OPENAI_API_KEY=your_openai_key_here
+```text
+study-assistant/
+├── app.py
+├── agent_handler.py
+├── config.py
+├── prompts.yaml
+├── rag_helper.py
+├── study_agents.py
+├── requirements.txt
+├── runtime.txt
+├── .env.example
+├── README.md
+├── .streamlit/
+└── .venv312/
 ```
 
-You can copy from the example file:
+## Setup
+
+### 1) Clone the repository
 
 ```bash
-cp .env.example .env
+git clone https://github.com/rohanbhati0912/study-assistant.git
+cd study-assistant
 ```
 
-## 🧪 Local setup
-
-### 1) Create and activate a virtual environment
+### 2) Create a virtual environment
 
 ```bash
-cd /Users/indranil/Downloads/study-assistant
 python3.12 -m venv .venv312
 source .venv312/bin/activate
 ```
 
-### 2) Install dependencies
+### 3) Install dependencies
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3) Run the app locally
+### 4) Add environment variables
+
+Create a `.env` file in the root folder:
+
+```bash
+GROQ_API_KEY=your_groq_key
+OPENAI_API_KEY=your_openai_key
+```
+
+You can also copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+## Run locally
 
 ```bash
 streamlit run app.py
 ```
 
-Or with the venv Python explicitly:
+If needed, run with the venv Python directly:
 
 ```bash
 .venv312/bin/python -m streamlit run app.py
 ```
 
-## ☁️ Render deployment
+## Render deployment
 
-The project is already configured for Render deployment.
+This project is set up for Render.
 
-### Required files
-
-Create `runtime.txt` in the project root:
+### Create runtime.txt
 
 ```text
 python-3.12.13
 ```
 
-### Render settings
+### Render build settings
 
 Build command:
 
@@ -97,14 +130,14 @@ Start command:
 streamlit run app.py --server.address 0.0.0.0 --server.port $PORT
 ```
 
-Environment variables:
+Environment variables to add in Render:
 
 - `GROQ_API_KEY`
 - `OPENAI_API_KEY`
 
-## 📦 Push to GitHub
+## GitHub push
 
-If the repository already exists, use:
+If the repo already exists:
 
 ```bash
 git add .
@@ -112,48 +145,30 @@ git commit -m "Initial commit"
 git push -u origin main
 ```
 
-If the remote is not set yet, run:
+If the remote is not set:
 
 ```bash
 git remote set-url origin https://github.com/rohanbhati0912/study-assistant.git
-git branch -M main
 git add .
 git commit -m "Initial commit"
 git push -u origin main
 ```
 
-## 🧭 Project structure
+## Troubleshooting
 
-```text
-study-assistant/
-├── app.py
-├── agent_handler.py
-├── config.py
-├── prompts.yaml
-├── rag_helper.py
-├── study_agents.py
-├── requirements.txt
-├── .env.example
-├── runtime.txt
-├── README.md
-└── .streamlit/
-```
+### Python version error
 
-## 🛠️ Troubleshooting
+Use Python 3.12. Do not use Python 3.14 for this project.
 
-### Python version issue
+### Missing API keys
 
-This app is validated on Python 3.12. Do not use Python 3.14 for deployment.
+Ensure your `.env` file exists and contains valid keys.
 
-### Streamlit command missing
+### Streamlit not found
 
 ```bash
 python3.12 -m streamlit run app.py
 ```
-
-### Missing API key errors
-
-Make sure `.env` is present and contains valid keys.
 
 ### Dependency issues
 
@@ -161,12 +176,12 @@ Make sure `.env` is present and contains valid keys.
 pip install -r requirements.txt
 ```
 
-## 📌 Notes
+## Notes
 
-- Use Python 3.12 for local and deployment environments.
-- Keep your API keys in environment variables or `.env`, not hardcoded in source files.
-- The live demo URL is the Render deployment at https://study-assistant-jyv1.onrender.com
+- The deployment is live on Render.
+- Keep API keys in environment variables instead of hardcoding them.
+- The app is designed for educational and study-use scenarios.
 
-## 👤 Author
+## Author
 
 Rohan Bhati
