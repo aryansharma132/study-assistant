@@ -73,6 +73,8 @@ if "learning_resources" not in st.session_state:
     st.session_state.learning_resources = None
 if "handler" not in st.session_state:
     st.session_state.handler = None
+if "plan_generation_failed" not in st.session_state:
+    st.session_state.plan_generation_failed = None
 if "uploaded_files_count" not in st.session_state:
     st.session_state.uploaded_files_count = 0
 
@@ -169,6 +171,11 @@ elif st.session_state.step == 2:
             st.session_state.learning_goal = learning_goal
             st.session_state.time_available = time_available
             st.session_state.learning_style = learning_style
+            st.session_state.student_analysis = None
+            st.session_state.learning_roadmap = None
+            st.session_state.learning_resources = None
+            st.session_state.handler = None
+            st.session_state.plan_generation_failed = None
             st.session_state.step = 3
             st.rerun()
 
@@ -190,19 +197,46 @@ elif st.session_state.step == 3:
             provider=provider
         )
     
-    # Analyze student
-    if not st.session_state.student_analysis:
+    # Analyze student. A failed stage is retried only when the user asks for it.
+    if (not st.session_state.student_analysis
+            and st.session_state.plan_generation_failed != "analysis"):
         analysis_results = st.session_state.handler.analyze_student()
+        if not analysis_results:
+            st.session_state.plan_generation_failed = "analysis"
     
     # Create roadmap
-    if st.session_state.student_analysis and not st.session_state.learning_roadmap:
+    if (st.session_state.student_analysis
+            and not st.session_state.learning_roadmap
+            and st.session_state.plan_generation_failed != "roadmap"):
         roadmap_results = st.session_state.handler.create_roadmap(
             st.session_state.student_analysis
         )
+        if not roadmap_results:
+            st.session_state.plan_generation_failed = "roadmap"
     
     # Find resources
-    if st.session_state.learning_roadmap and not st.session_state.learning_resources:
+    if (st.session_state.learning_roadmap
+            and not st.session_state.learning_resources
+            and st.session_state.plan_generation_failed != "resources"):
         resource_results = st.session_state.handler.find_resources()
+        if not resource_results:
+            st.session_state.plan_generation_failed = "resources"
+
+    if st.session_state.plan_generation_failed:
+        failed_stage = st.session_state.plan_generation_failed
+        stage_labels = {
+            "analysis": "student analysis",
+            "roadmap": "learning roadmap",
+            "resources": "learning resources",
+        }
+        st.warning(
+            f"We could not create your {stage_labels[failed_stage]}. "
+            "Check the message above, then retry when you are ready."
+        )
+        if st.button("Retry learning plan generation", type="primary"):
+            st.session_state.handler = None
+            st.session_state.plan_generation_failed = None
+            st.rerun()
     
     # Move to dashboard when complete
     if (st.session_state.student_analysis and 
@@ -295,7 +329,8 @@ elif st.session_state.step == 4:
                     focus_areas=focus_areas if focus_areas else "general",
                     num_questions=num_questions
                 )
-                st.session_state.current_quiz = quiz_results["quiz"]
+                if quiz_results.get("quiz"):
+                    st.session_state.current_quiz = quiz_results["quiz"]
         
         if "current_quiz" in st.session_state and st.session_state.current_quiz:
             st.markdown(st.session_state.current_quiz)
