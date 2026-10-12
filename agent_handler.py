@@ -57,6 +57,62 @@ class StudyAssistantHandler:
             str: The formatted prompt
         """
         return prompt_template.format(**kwargs)
+
+    @staticmethod
+    def _is_configuration_error(error: ValueError) -> bool:
+        """Return whether a ValueError is one raised by StudyAgents configuration."""
+        return str(error) in {
+            "Unsupported AI provider. Choose Groq or OpenAI.",
+            "GROQ_API_KEY is not configured. Add it to your environment and restart the app.",
+            "OPENAI_API_KEY is not configured. Add it to your environment and restart the app.",
+        }
+
+    @staticmethod
+    def _show_provider_error(error: Exception) -> None:
+        """Show an actionable provider error without exposing provider response data."""
+        error_name = type(error).__name__.lower()
+        status_code = getattr(error, "status_code", None)
+
+        if status_code in (401, 403) or "authentication" in error_name or "permission" in error_name:
+            st.error("The AI provider rejected your credentials. Check the configured API key and try again.")
+        elif status_code == 429 or "ratelimit" in error_name or "rate_limit" in error_name:
+            st.error("The AI provider is rate limiting requests. Wait a moment and try again.")
+        elif status_code == 404 or "notfound" in error_name or "not_found" in error_name:
+            st.error("The selected AI model is unavailable. Choose a supported model and try again.")
+        elif any(term in error_name for term in ("connection", "timeout", "connecterror")):
+            st.error("The AI provider could not be reached. Check your internet connection and try again.")
+        else:
+            st.error(
+                "The AI request failed. Check your API key, model, and internet "
+                "connection, then try again."
+            )
+
+    def _run_agent(self, agent_or_factory, prompt):
+        """Run an agent and show a safe, actionable error if it fails.
+
+        Passing an agent factory keeps model-configuration errors at the same
+        request-handling boundary as provider errors.
+        """
+        try:
+            agent = (
+                agent_or_factory
+                if hasattr(agent_or_factory, "run")
+                else agent_or_factory()
+            )
+            response = agent.run(prompt, stream=False)
+            if response is None or not getattr(response, "content", None):
+                st.error("The AI provider returned an empty response. Please retry.")
+                return None
+            return response.content
+        except ValueError as error:
+            if self._is_configuration_error(error):
+                st.error(str(error))
+            else:
+                self._show_provider_error(error)
+            return None
+        except Exception as error:
+            self._show_provider_error(error)
+            return None
     
     def analyze_student(self):
         """
@@ -70,7 +126,6 @@ class StudyAssistantHandler:
         with st.status("Analyzing your learning needs...", expanded=True) as status:
             status.update(label="Creating student profile...", state="running")
             
-            analyzer = self.agents.student_analyzer_agent()
             analysis_prompt = self._format_prompt(
                 self.config["prompts"]["student_analysis"]["base"],
                 topic=self.topic,
@@ -81,8 +136,13 @@ class StudyAssistantHandler:
                 learning_style=self.learning_style
             )
             
-            analysis_resp = analyzer.run(analysis_prompt, stream=False)
-            analysis_result = analysis_resp.content
+            analysis_result = self._run_agent(
+                self.agents.student_analyzer_agent, analysis_prompt
+            )
+            if analysis_result is None:
+                status.update(label="Analysis could not be completed. Please retry.", state="error")
+                return {}
+
             results["analysis"] = analysis_result
             st.session_state.student_analysis = analysis_result
             
@@ -105,7 +165,6 @@ class StudyAssistantHandler:
         with st.status("Creating your personalized learning roadmap...", expanded=True) as status:
             status.update(label="Designing learning path...", state="running")
             
-            roadmap_creator = self.agents.roadmap_creator_agent()
             roadmap_prompt = self._format_prompt(
                 self.config["prompts"]["roadmap_creation"]["base"],
                 student_analysis=student_analysis,
@@ -115,8 +174,13 @@ class StudyAssistantHandler:
                 knowledge_level=self.knowledge_level
             )
             
-            roadmap_resp = roadmap_creator.run(roadmap_prompt, stream=False)
-            roadmap_result = roadmap_resp.content
+            roadmap_result = self._run_agent(
+                self.agents.roadmap_creator_agent, roadmap_prompt
+            )
+            if roadmap_result is None:
+                status.update(label="Roadmap could not be created. Please retry.", state="error")
+                return {}
+
             results["roadmap"] = roadmap_result
             st.session_state.learning_roadmap = roadmap_result
             
@@ -136,7 +200,6 @@ class StudyAssistantHandler:
         with st.status("Finding learning resources...", expanded=True) as status:
             status.update(label="Searching for resources...", state="running")
             
-            resource_finder = self.agents.resource_finder_agent()
             resource_prompt = self._format_prompt(
                 self.config["prompts"]["resource_finding"]["base"],
                 topic=self.topic,
@@ -145,8 +208,13 @@ class StudyAssistantHandler:
                 learning_style=self.learning_style
             )
             
-            resource_resp = resource_finder.run(resource_prompt, stream=False)
-            resource_result = resource_resp.content
+            resource_result = self._run_agent(
+                self.agents.resource_finder_agent, resource_prompt
+            )
+            if resource_result is None:
+                status.update(label="Resources could not be found. Please retry.", state="error")
+                return {}
+
             results["resources"] = resource_result
             st.session_state.learning_resources = resource_result
             
@@ -172,7 +240,6 @@ class StudyAssistantHandler:
         with st.status("Generating quiz...", expanded=True) as status:
             status.update(label="Creating questions...", state="running")
             
-            quiz_generator = self.agents.quiz_generator_agent()
             quiz_prompt = self._format_prompt(
                 self.config["prompts"]["quiz_generation"]["base"],
                 topic=self.topic,
@@ -181,8 +248,13 @@ class StudyAssistantHandler:
                 num_questions=num_questions
             )
             
-            quiz_resp = quiz_generator.run(quiz_prompt, stream=False)
-            quiz_result = quiz_resp.content
+            quiz_result = self._run_agent(
+                self.agents.quiz_generator_agent, quiz_prompt
+            )
+            if quiz_result is None:
+                status.update(label="Quiz could not be generated. Please retry.", state="error")
+                return {}
+
             results["quiz"] = quiz_result
             
             status.update(label="Quiz ready!", state="complete")
@@ -200,7 +272,6 @@ class StudyAssistantHandler:
         Returns:
             str: Tutoring response
         """
-        tutor = self.agents.tutor_agent()
         tutor_prompt = self._format_prompt(
             self.config["prompts"]["tutoring"]["base"],
             student_question=student_question,
@@ -208,8 +279,7 @@ class StudyAssistantHandler:
             knowledge_level=self.knowledge_level
         )
         
-        tutor_resp = tutor.run(tutor_prompt, stream=False)
-        return tutor_resp.content
+        return self._run_agent(self.agents.tutor_agent, tutor_prompt)
     
     def initialize_rag(self, collection_name: str = "study_materials"):
         """
@@ -264,15 +334,13 @@ class StudyAssistantHandler:
         context = "\n\n".join(relevant_docs)
         
         # Use RAG tutor agent
-        rag_tutor = self.agents.rag_tutor_agent()
         rag_prompt = self._format_prompt(
             self.config["prompts"]["rag_query"]["base"],
             question=question,
             context=context
         )
         
-        rag_resp = rag_tutor.run(rag_prompt, stream=False)
-        return rag_resp.content
+        return self._run_agent(self.agents.rag_tutor_agent, rag_prompt)
     
     def get_document_count(self) -> int:
         """

@@ -54,19 +54,26 @@ class StudyAgents:
             return config.get("learning_styles", {}).get(self.learning_style, {})
     
     def _get_model(self, temperature=0.7):
-        """
-        Get the appropriate model based on the provider.
-        
-        Args:
-            temperature (float): The temperature setting for the model
-            
-        Returns:
-            Model: The configured model instance
-        """
-        if self.provider == "groq":
+        """Return the configured model or raise a helpful configuration error."""
+        provider = self.provider.lower()
+        key_names = {
+            "groq": "GROQ_API_KEY",
+            "openai": "OPENAI_API_KEY",
+        }
+
+        if provider not in key_names:
+            raise ValueError("Unsupported AI provider. Choose Groq or OpenAI.")
+
+        env_name = key_names[provider]
+        if not os.getenv(env_name):
+            raise ValueError(
+                f"{env_name} is not configured. "
+                "Add it to your environment and restart the app."
+            )
+
+        if provider == "groq":
             return Groq(id=self.model_name, temperature=temperature)
-        else:
-            return OpenAIChat(id=self.model_name, temperature=temperature)
+        return OpenAIChat(id=self.model_name, temperature=temperature)
     
     def student_analyzer_agent(self):
         """
