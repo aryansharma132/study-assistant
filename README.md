@@ -6,6 +6,12 @@ A multi-agent AI study app that helps students plan learning, generate personali
 
 https://study-assistant-jyv1.onrender.com
 
+## About
+
+Study Assistant is an AI-powered study companion designed to help students learn more effectively through personalized guidance, structured roadmaps, and instant academic support. It combines multiple specialized agents for analysis, tutoring, quiz generation, and document-based Q&A so learners can study smarter and stay focused.
+
+The platform is built for students who want a more organized and adaptive learning experience, especially when preparing for tests, revising concepts, or working through course materials.
+
 ## Overview
 
 Study Assistant is a Streamlit-based learning platform built around multiple specialized AI agents. It helps students:
